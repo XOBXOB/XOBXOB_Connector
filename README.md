@@ -6,7 +6,7 @@ A Processing sketch to connect to the network through a USB port
 #Instructions:
 
 1. Download Processing 2.0 from www.processing.org
-2. Download the zip file from this repository
+2. Download the XOBXOB_Connector zip file from this repository
 3. Copy the XOBXOB_Connector folder from the zip into the Processing user sketch folder (check on Processing.org for your operating system to see where)
 4. Start Processing and open the XOBXOB_Processing sketch (File > Open)
 5. Run the Processing sketch
