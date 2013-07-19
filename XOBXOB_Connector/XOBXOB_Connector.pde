@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //
-//  XOBXOB Connector
+//  XOBXOB Connector (Version 1.1.0)
 //
 //  Application to allow connecting to the XOBXOB service through a
 //  serial port
@@ -36,6 +36,9 @@ String _LF = "\n";
 String _HOST_HEADER = "Host: www.xobxob.com" + _LF;
 String _REQUEST_END = _LF + _LF;
 
+String _XOBXOB_DOMAIN = "www.xobxob.com";
+int    _XOBXOB_PORT   = 80;
+
 // Serial and Network clients
 Client myClient;
 Serial mySerial;
@@ -45,45 +48,47 @@ String serialIn;
 String webIn;
 
 // Colors
-color backgroundColor   = #FFFFFF;
-color textColor         = #888888;
-color highlightColor    = #A0A0A0;
-color subTitleColor     = #8080FF;
+color backgroundColor         = #FFFFFF;
+color contentBackgroundColor  = #FAFAFA;
+color textColor               = #999999;
+color highlightColor          = #AAAAAA;
+color alertColor              = #FF3333;
 
 // Font and logo
 PFont font;
+PFont alertFont;
 PImage logo;
 
 // Screen parameters
 int screenWidth = 350;
-int screenHeight = 400;
+int screenHeight = 350;
 int leftMargin = 53;
 int leftMargin2 = leftMargin + 55;
 int topMargin = 110;
 
 // State variables
 Boolean echo = false;
-Boolean help = true;
-Boolean settingSerial = false;
+Boolean serialInitialized = false;
+Boolean paused = false;
 
 // Serial port parameters
 String serialPortList[];
 int currentPort = -1;
 int baudRate = 57600;
-Boolean serialConnected = false;
 
 void setup() {
   
   // Deal with font 
   textMode(MODEL);
   font = loadFont("Helvetica-12.vlw");
+  alertFont = loadFont("Helvetica-Bold-48.vlw");
   textFont(font);
   fill(textColor);
   
   // Connect to www.xobxob.com
-  myClient = new Client(this, "www.xobxob.com", 80);
-  delay (500);
-  myClient.clear();
+  myClient = new Client(this, _XOBXOB_DOMAIN, _XOBXOB_PORT);
+  //delay (500);
+  //myClient.clear();
   
   // Load logo
   logo = loadImage("XOBXOB_logo.png");
@@ -99,9 +104,8 @@ void setup() {
  
 void draw() {
   
-
     // If the current port is set, start communicating
-    if ((currentPort > 0) && serialConnected){
+    if ((currentPort > 0) && !paused){
       
       // Pass-through from web to serial
       if (myClient.available() > 0) {
@@ -121,61 +125,73 @@ void draw() {
     
     // Screen drawing
     background(backgroundColor);
-    
+
+    // Fill in the content background
+    fill(contentBackgroundColor);
+    stroke(contentBackgroundColor);
+    rect(0, topMargin-27, width, height);
+
     // Logo
     float logoWidth = logo.width/2;
     float logoHeight = logo.height/2;
-    image(logo, leftMargin, 10, logoWidth, logoHeight);
-    fill (subTitleColor);
-    textSize (13);
-    text("Simple Internet for Things", leftMargin+40, 67);
+    image(logo, leftMargin, 23, logoWidth, logoHeight);
     
-    // Determine what to display. First try Help
-    if (help) {
-
-      fill(textColor);
-      showHelp (leftMargin, topMargin);
-
-    // Well, not in help mode. What about setting the serial port?
-    } else if (settingSerial) {
+    // Initialize serial port
+    if (!serialInitialized) {
       
       // Serial ports
-      serialPortList = mySerial.list();
+      fill(textColor);
+      serialPortList = Serial.list();
       for (int i=0; i<serialPortList.length; i++) {
-        fill(highlightColor);
         text ("[" + i + "]  " + serialPortList[i], leftMargin, topMargin+(i*17));
       };
       text ("\nPress number to select port", leftMargin, topMargin+(serialPortList.length*17));
     
       
     } else {
-
-      // Put the Echo status on the screen
-      fill(textColor);
-      text("ECHO:", leftMargin, topMargin);
-      fill(highlightColor);
-      text(((echo)?"ON":"OFF"), leftMargin2, topMargin);
-    
+      
       // Display current serial port
-      fill(textColor);
-      text("SERIAL:", leftMargin, topMargin+20);
       fill(highlightColor);
-      if (currentPort < 0) {
-        text ("Type 's' then number to select port", leftMargin2, topMargin+20);
-      } else {
-        if (serialConnected) {
-          text ("[" + currentPort + "]  " + serialPortList[currentPort], leftMargin2, topMargin+20);
-        } else {
-          text ("Type 'c' to reconnect serial port", leftMargin2, topMargin+20);
-        }
+      text("SERIAL:", leftMargin, topMargin);
+      fill(textColor);
+      text ("[" + currentPort + "]  " + serialPortList[currentPort], leftMargin2, topMargin);
+      
+      // Put the Echo status on the screen
+      fill(highlightColor);
+      text("ECHO:", leftMargin, topMargin+20);
+      fill(textColor);
+      text(((echo)?"ON":"OFF"), leftMargin2, topMargin+20);
+    
+      // Handle Pause
+      if (paused) {
+        pushStyle();
+        textFont (alertFont);
+        textSize(48);
+        fill(alertColor);
+        text ("PAUSED", leftMargin-4, height-52);
+        popStyle();
       }
       
-      // Help prompt
+      // Prompt
       fill(textColor);
-      text ("Press 'h' for help", leftMargin, height-30);
-
+      if (paused) {
+        text ("Press any key to continue", leftMargin, height-30);
+      } else {
+        String prompt = "Press 'space' to pause, 'e' for echo " + ((echo)?"off":"on");
+        text (prompt, leftMargin, height-30);
+      }
     }
     
+}
+
+//////////////////////////////////////////////////////////////////
+//
+//  disconnectEvent()
+//  Reconnects the client if it is disconnected
+//
+void disconnectEvent (Client theClient) {
+  if (echo) println ("\nReconnecting.");
+  myClient = new Client(this, _XOBXOB_DOMAIN, _XOBXOB_PORT);
 }
 
 
@@ -194,45 +210,41 @@ void setSerial(int portNumber) {
   mySerial = new Serial(this, serialPortList[currentPort], baudRate);
   delay (500);
   mySerial.clear();
-  serialConnected = true;
+  serialInitialized = true;
 
 }
 
 //////////////////////////////////////////////////////////////////
 //
-//  keyReleased
+//  keyPressed, keyReleased
 //  Key handler for all key presses
 //
+void keyPressed() {
+  if (key == 27) key = 0;
+}
+
 void keyReleased () {
+  
+  if (paused) {
+    setSerial (currentPort);
+    paused = false;
+    return;
+  }
   
   switch (key) {
     
     case 'e':
-      help = false;
       echo = !echo;
       break;
       
-    case 'h':
-      help = !help;
-      break;
-      
-    case 's':
-      help = false;
-      settingSerial = !settingSerial;
-      break;
-      
-    case 'd':
+    case 'p':
+    case ' ':
       if (mySerial != null) {
         mySerial.stop();
-        serialConnected = false;
+        paused = true;
       }
       break;
       
-    case 'c':
-      setSerial (currentPort);
-      break;
-        
-     
     case '0':  // This little mess is for
     case '1':  // keys 0-9
     case '2':
@@ -244,13 +256,13 @@ void keyReleased () {
     case '8':
     case '9':
     
-      // If we're not in settingSerial mode, then done
-      if (!settingSerial) break;
+      // If serial is already initialized, then we're done!
+      if (serialInitialized) break;
       
       // Turn port key into 0-9 and set the serial port
       int newPort = (key - '0');
       setSerial (newPort);
-      settingSerial = false;
+      serialInitialized = true;
       break;
       
     default:
@@ -258,32 +270,3 @@ void keyReleased () {
   };
 }
 
-//////////////////////////////////////////////////////////////////
-//
-//  Help
-//  Display help text in draw window
-//
-void showHelp (int x, int y) {
-  
-  String helpText[] = { 
-    "Keyboard commands:",
-    " ",
-    "Press 's' followed by a number to set/change",
-    "the current port (the one to which you have",
-    "your Arduino connected.)",
-    " ",
-    "Press 'd/c' to disconnect/connect serial port.",
-    " ",
-    "Press 'e' to toggle character echo",
-    "in the standard output pane.",
-    " ",
-    "Press 'h' to toggle this help text."
-  };
-  
-  int linePos = y;
-  for (int i=0; i<helpText.length; i++) {
-    fill (textColor);
-    //if (i == 0) fill(highlightColor);
-    text (helpText[i], x, linePos + (i*17));
-  }
-}
