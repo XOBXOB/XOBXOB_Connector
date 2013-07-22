@@ -32,11 +32,6 @@ import processing.net.*;
 import processing.serial.*;
 import javax.swing.ImageIcon;
 
-// For adding header to a XOBXOB request
-String _LF = "\n";
-String _HOST_HEADER = "Host: www.xobxob.com" + _LF;
-String _REQUEST_END = _LF + _LF;
-
 String _XOBXOB_DOMAIN = "www.xobxob.com";
 int    _XOBXOB_PORT   = 80;
 
@@ -91,8 +86,6 @@ void setup() {
   
   // Connect to www.xobxob.com
   myClient = new Client(this, _XOBXOB_DOMAIN, _XOBXOB_PORT);
-  //delay (500);
-  //myClient.clear();
   
   // Load logo
   logo = loadImage("XOBXOB_logo.png");
@@ -186,9 +179,9 @@ void draw() {
       // Prompt
       fill(textColor);
       if (paused) {
-        text ("Press any key to continue", screenCenter, height-30);
+        text ("Mouse click or keypress to continue", screenCenter, height-30);
       } else {
-        String prompt = "Press 'space' to pause" + ((echoEnabled)?", e for echo " + ((echo)?"off":"on"):"");
+        String prompt = "Mouse click or 'space' to pause" + ((echoEnabled)?", e for echo " + ((echo)?"off":"on"):"");
         text (prompt, screenCenter, height-30);
       }
     }
@@ -219,10 +212,30 @@ void setSerial(int portNumber) {
   currentPort = portNumber;
   if (mySerial != null) mySerial.stop();
   mySerial = new Serial(this, serialPortList[currentPort], baudRate);
-  delay (500);
-  mySerial.clear();
   serialInitialized = true;
 
+}
+
+//////////////////////////////////////////////////////////////////
+//
+//  Handle mouse click
+//
+void mouseClicked() {
+  
+  // Ignore mouse click if serial port hasn't been initialized
+  if (!serialInitialized) return;
+
+  // Toggle paused status
+  if (paused) {
+    setSerial (currentPort);
+    paused = false;
+  } else {
+    if (mySerial != null) {
+      mySerial.stop();
+      paused = true;
+    }
+  }
+  
 }
 
 //////////////////////////////////////////////////////////////////
@@ -235,6 +248,9 @@ void keyPressed() {
 }
 
 void keyReleased () {
+  
+  // On Mac, don't process the command key
+  if (157 == keyCode) return;
   
   if (paused) {
     setSerial (currentPort);
@@ -256,8 +272,8 @@ void keyReleased () {
       }
       break;
       
-    case '0':  // This little mess is for
-    case '1':  // keys 0-9
+    case '0':  // This is for keys 0-9
+    case '1': 
     case '2':
     case '3':
     case '4':
