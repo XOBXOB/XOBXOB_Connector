@@ -126,7 +126,7 @@ public void setup() {
 public void draw() {
   
     // If the current port is set, start communicating
-    if ((currentPort > 0) && !paused){
+    if ((currentPort >= 0) && !paused){
       
       // Pass-through from web to serial
       if (myClient.available() > 0) {
