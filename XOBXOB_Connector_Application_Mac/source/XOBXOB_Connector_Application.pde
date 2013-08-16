@@ -49,6 +49,7 @@ color contentBackgroundColor  = #F0F0F0;
 color highlightBackgroundColor= #EFEF00;
 color textColor               = #999999;
 color highlightColor          = #AAAAAA;
+color statusColor             = #F8F8F8;
 color alertColor              = #FFFFFF;
 
 // Font and logo
@@ -65,7 +66,7 @@ int leftMargin2 = leftMargin + 55;
 int topMargin = 110;
 
 // State variables
-Boolean echoEnabled = false;
+Boolean echoEnabled = false;    // Turns echo feature on/off
 Boolean echo = false;
 Boolean serialInitialized = false;
 Boolean paused = false;
@@ -74,6 +75,9 @@ Boolean paused = false;
 String serialPortList[];
 int currentPort = -1;
 int baudRate = 57600;
+
+// Valid response characters
+String validChars = "abcdefghijklmnopqrstuvwxyz";
 
 void setup() {
   
@@ -149,39 +153,45 @@ void draw() {
       fill(textColor);
       serialPortList = Serial.list();
       for (int i=0; i<serialPortList.length; i++) {
-        text ("[" + i + "]  " + serialPortList[i], leftMargin, topMargin+(i*17));
+        text ("[" + validChars.charAt(i) + "]  " + serialPortList[i], leftMargin, topMargin+(i*17));
       };
-      text ("\nPress number to select port", leftMargin, topMargin+(serialPortList.length*17));
+      text ("\nPress letter to select port", leftMargin, topMargin+(serialPortList.length*17));
     
       
     } else {
       
-      // Display current serial port
-      fill(highlightColor);
-      text ("SERIAL: [" + currentPort + "]  " + serialPortList[currentPort], screenCenter, topMargin);
-      
-      // Put the Echo status on the screen
-      if (echo && echoEnabled) {
-        fill(highlightColor);
-        text("ECHO:  " + ((echo)?"ON":"OFF"), screenCenter, topMargin+20);
-      }
     
-      // Handle Pause
+      // Paused
       if (paused) {
         pushStyle();
         textFont (alertFont);
         textSize(48);
         fill(alertColor);
-        text ("PAUSED", screenCenter, topMargin+70);
+        text ("PAUSED", screenCenter, topMargin+90);
         popStyle();
-      }
+        
+      // NOT Paused  
+      } else {
+        pushStyle();
+        textFont (alertFont);
+        textSize(48);
+        fill(statusColor);
+        text ("CONNECTED", screenCenter, topMargin+90);
+        popStyle();
       
+        // Put the Echo status on the screen
+        if (echo && echoEnabled) {
+          fill(highlightColor);
+          text("ECHO:  " + ((echo)?"ON":"OFF"), screenCenter, topMargin+20);
+        }
+      }
+
       // Prompt
       fill(textColor);
       if (paused) {
         text ("Mouse click or keypress to continue", screenCenter, height-30);
       } else {
-        String prompt = "Mouse click or 'space' to pause" + ((echoEnabled)?", e for echo " + ((echo)?"off":"on"):"");
+        String prompt = "Mouse click or 'space' to pause" + ((echoEnabled)?", '.' for echo " + ((echo)?"off":"on"):"");
         text (prompt, screenCenter, height-30);
       }
     }
@@ -252,51 +262,38 @@ void keyReleased () {
   // On Mac, don't process the command key
   if (157 == keyCode) return;
   
+  // If paused, any key restarts
   if (paused) {
     setSerial (currentPort);
     paused = false;
     return;
   }
   
-  switch (key) {
+  // if the echo feature is enabled, check for toggle
+  if (key == '.') {
+    if (echoEnabled) echo = !echo;
+    return;
+  }
+  
+  // Space pauses
+  if (key == ' ') {
+    if (mySerial != null) {
+      mySerial.stop();
+      paused = true;
+      return;
+    }
+  }
+  
+  // If serial is already initialized, then we're done!
+  if (serialInitialized) return;
     
-    case 'e':
-      if (echoEnabled) echo = !echo;
-      break;
-      
-    case 'p':
-    case ' ':
-      if (mySerial != null) {
-        mySerial.stop();
-        paused = true;
-      }
-      break;
-      
-    case '0':  // This is for keys 0-9
-    case '1': 
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-    
-      // If serial is already initialized, then we're done!
-      if (serialInitialized) break;
-      
-      // Turn port key into 0-9 and set the serial port
-      int newPort = (key - '0');
-      if (newPort < serialPortList.length) {
-        setSerial (newPort);
-        serialInitialized = true;
-        textAlign(CENTER);
-      }
-      break;
-      
-    default:
-      break;
-  };
+  // Check to see if char is a valid port selector
+  int newPort = validChars.indexOf(key);
+  if ((newPort >= 0) && (newPort < serialPortList.length)) {    
+    setSerial (newPort);
+    serialInitialized = true;
+    textAlign(CENTER);
+  }
+
 }
 
