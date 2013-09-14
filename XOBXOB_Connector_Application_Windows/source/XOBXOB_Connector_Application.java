@@ -52,8 +52,10 @@ public class XOBXOB_Connector_Application extends PApplet {
 
 
 
-String _XOBXOB_DOMAIN = "www.xobxob.com";
-int    _XOBXOB_PORT   = 80;
+//String _XOBXOB_DOMAIN = "www.xobxob.com";
+//int    _XOBXOB_PORT   = 80;
+String _XOBXOB_DOMAIN = "localhost";
+int    _XOBXOB_PORT   = 8080;
 
 // Serial and Network clients
 Client myClient;
@@ -109,7 +111,10 @@ public void setup() {
   fill(textColor);
   
   // Connect to www.xobxob.com
-  myClient = new Client(this, _XOBXOB_DOMAIN, _XOBXOB_PORT);
+  myClient = null;
+  while (myClient == null) {
+    myClient = new Client(this, _XOBXOB_DOMAIN, _XOBXOB_PORT);
+  }
   
   // Load logo
   logo = loadImage("XOBXOB_logo.png");

@@ -8,6 +8,8 @@ This is an application that runs on your laptop/desktop to allow the Arduino to 
 1. Download and unzip the XOBXOB_Connector zip file for your operating system (Mac, Windows, Linux)
 2. Run the application inside the folder
 
+Note: if you are using a 64-bit version of Linux, you must use the Linux64 connector application.
+
 When the application starts, you will see the application window along with a list of serial ports on your computer. Type the single digit number of the port to which you want to connect (if you have more than 9 serial ports, you may have problems).
 Once connected, the application will take anything coming in the serial port and send it over the
 network to www.XOBXOB.com, and anything coming from www.XOBXOB.com and send it back over the serial port to the Arduino. No shield necessary.
