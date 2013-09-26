@@ -52,10 +52,8 @@ public class XOBXOB_Connector_Application extends PApplet {
 
 
 
-//String _XOBXOB_DOMAIN = "www.xobxob.com";
-//int    _XOBXOB_PORT   = 80;
-String _XOBXOB_DOMAIN = "localhost";
-int    _XOBXOB_PORT   = 8080;
+String _XOBXOB_DOMAIN = "www.xobxob.com";
+int    _XOBXOB_PORT   = 80;
 
 // Serial and Network clients
 Client myClient;
@@ -321,6 +319,7 @@ public void keyReleased () {
   }
 
 }
+
 
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "XOBXOB_Connector_Application" };
